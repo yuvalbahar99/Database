@@ -1,51 +1,78 @@
+"""
+author: Yuval Bahar
+date: 6/12/2022
+description: checks the synchronization while mode is threading
+"""
+
+#  ----------------- IMPORTS -----------------
+
 from filedatabase import FileDatabase
 from syncdatabase import SyncDatabase
 from threading import Thread
 import logging
 
-FILENAME = "newfile"
+# ----------------- CONSTANTS - ----------------
+
+FILENAME = "new_file"
 MODE = "threading"
-READER_NUM
+READER_NUM = 50
+WRITER_NUM = 10
+FORMAT = '%(asctime)s %(levelname)s %(threadName)s %(message)s'
+FILENAMELOG = 'logging_thread.text'
+
+# ----------------- FUNCTIONS - ----------------
+
 
 def reader(database):
-    logging.debug("reader joined")
-    for i in range(100000):
-        assert i == database.get_value(i)
+    """
+    reader is trying to get an access to read the value from the dictionary
+    :param database: an object that one of his feature is a dictionary
+    :return: None
+    """
+    logging.debug("reader started")
+    for i in range(100):
+        flag = database.get_value(i) == i or database.get_value(i) is None
+        assert flag
     logging.debug("reader left")
 
 
 def writer(database):
-    logging.debug("writer joined")
-    for i in range(100000):
-        assert database.set_value(i,i)
+    """
+    writer is trying to get an access to write the value from the dictionary
+    :param database: an object that one of his feature is a dictionary
+    :return: None
+    """
+    logging.debug("writer started")
+    for i in range(100):
+        assert database.set_value(i, i)
+    for i in range(100):
+        flag = database.delete_value(i) == i or database.delete_value(i) is None
+        assert flag
     logging.debug("writer left")
 
 
 def main():
-    #  checks the access of writing and reading without compitition
-    # צריך להדפיס כל פעם שלקוח מקבל גישהלכתוב או לקרוא, וכל פעם שהוא משחרר את הגישה
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(threadName)s %(message)s')
+    """
+    combine the running of the writers and the readers by threading
+    :return: None
+    """
+    #  checks the access of writing and reading without competition
+    # צריך להדפיס כל פעם שלקוח מקבל גישה לכתוב או לקרוא, וכל פעם שהוא משחרר את הגישה
+    logging.basicConfig(filename=FILENAMELOG, level=logging.DEBUG, format=FORMAT)
     database = SyncDatabase(MODE, FileDatabase(FILENAME))
-    # הרשאת כתיבה כאשר אין תחרות
-    logging.debug("----- no competition -----")
-    writer(database)
-    reader(database)
     # הרשאת כתיבה כאשר יש תחרות
-    logging.debug("----- with competition -----")
     all_threads = []
-    for i in range(0, 10):
-        thread = Thread(target=writer, args=(database, ))
-        all_threads.append(thread)
-        thread.start()
-    for i in all_threads:
-        i.join()
-    for i in range(0, 50):
+    for i in range(0, READER_NUM):
         thread = Thread(target=reader, args=(database, ))
         all_threads.append(thread)
-        thread.start()
+    for i in range(0, WRITER_NUM):
+        thread = Thread(target=writer, args=(database, ))
+        all_threads.append(thread)
+    for i in all_threads:
+        i.start()
     for i in all_threads:
         i.join()
 
+
 if __name__ == "__main__":
     main()
-    
