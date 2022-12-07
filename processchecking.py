@@ -31,7 +31,7 @@ def reader(database):
     """
     logging.debug("reader started")
     for i in range(100):
-        flag = database.get_value(i) == i or database.get_value(i) is None
+        flag = database.get_value(i) is None or database.get_value(i) == i 
         assert flag
     logging.debug("reader left")
 
