@@ -46,7 +46,8 @@ def writer(database):
     for i in range(100):
         assert database.set_value(i, i)
     for i in range(100):
-        flag = database.delete_value(i) == i or database.delete_value(i) is None
+        val = database.delete_value(i)
+        flag = val == i or val is None
         assert flag
     logging.debug("writer left")
 
@@ -62,6 +63,8 @@ def main():
     database = SyncDatabase(MODE, FileDatabase(FILENAME))
     # הרשאת כתיבה כאשר יש תחרות
     all_threads = []
+    for i in range(1000, 1100):
+        database.set_value(i, i)
     for i in range(0, READER_NUM):
         thread = Thread(target=reader, args=(database, ))
         all_threads.append(thread)
@@ -72,6 +75,8 @@ def main():
         i.start()
     for i in all_threads:
         i.join()
+    for i in range(1000, 1100):
+        assert database.get_value(i) == i
 
 
 if __name__ == "__main__":
